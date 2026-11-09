@@ -20,3 +20,33 @@ jobs:
         run: cmake --build build --parallel
       - name: Test
         run: ctest --test-dir build --output-on-failure
+
+  firmware-compile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - board: arduino:avr:uno
+            core: arduino:avr
+          - board: esp32:esp32:esp32
+            core: esp32:esp32
+    steps:
+      - uses: actions/checkout@v4
+      - uses: arduino/setup-arduino-cli@v2
+      - name: Install board core
+        env:
+          BOARD_CORE: ${{ matrix.core }}
+        run: |
+          if [ "$BOARD_CORE" = "esp32:esp32" ]; then
+            arduino-cli core update-index --additional-urls "https://espressif.github.io/arduino-esp32/package_esp32_index.json"
+            arduino-cli core install esp32:esp32 --additional-urls "https://espressif.github.io/arduino-esp32/package_esp32_index.json"
+          else
+            arduino-cli core update-index
+            arduino-cli core install arduino:avr
+          fi
+      - name: Compile LED demonstration for board
+        env:
+          BOARD_FQBN: ${{ matrix.board }}
+        run: arduino-cli compile --fqbn "$BOARD_FQBN" --libraries ./arduino ./arduino/IrrigationScheduler/examples/IndicatorDemo
