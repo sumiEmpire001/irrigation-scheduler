@@ -1,0 +1,22 @@
+name: C++ build and unit tests
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  host-cpp:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        compiler: [g++, clang++]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        env:
+          CXX: ${{ matrix.compiler }}
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+      - name: Build
+        run: cmake --build build --parallel
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
